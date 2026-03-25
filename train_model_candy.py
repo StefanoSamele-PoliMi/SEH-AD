@@ -604,7 +604,7 @@ def main():
     # Specify a path if you want to save the evaluated curves
     image_auroc(test_dat,"yes"), pixel_auroc(test_dat,"yes"), pro_metric(test_dat,"yes")
     visualise_metrics(test_dat)
-    save_all_predictions(test_dat, "split_per_candy_output")
+    save_all_predictions(test_dat, "/results")
 
 
 if __name__ == "__main__":
