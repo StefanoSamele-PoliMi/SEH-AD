@@ -18,54 +18,42 @@ from anomalib.utils.post_processing import superimpose_anomaly_map, anomaly_map_
 from torchvision.transforms.v2 import Compose, RandomAdjustSharpness, RandomHorizontalFlip, Resize, Normalize, CenterCrop
 
 
-def process_and_save_image(image_path, left_dir, crop_dimensions):
+def process_and_save_image(image_path, left_dir, crop_dimensions,resize_dims):
     """
-    Process an image: center crop, split into three vertical patches (25%-50%-25%), and save each patch.
+    Process an image: center crop, then resize with appropriate interpolation.
     """
-    # Load the image
     with Image.open(image_path) as img:
-        # img = img.resize(resize_dims, Image.Resampling.LANCZOS)
-
         img_width, img_height = img.size
         crop_width, crop_height = crop_dimensions
 
-        # Calculate cropping box for center crop
+        # 1. Calculate cropping box
         left = (img_width - crop_width) // 2
         upper = (img_height - crop_height) // 2
         right = left + crop_width
         lower = upper + crop_height
 
-        # Perform center crop
+        # 2. Perform center crop
         cropped_img = img.crop((left, upper, right, lower))
 
-        # # Define widths for 30% (left), 40% (middle), 30% (right)
-        # left_patch_width = int(crop_width * 0.3)
-        # middle_patch_width = int(crop_width * 0.4)
-        # right_patch_width = crop_width - left_patch_width - middle_patch_width  # to handle rounding issues
-        #
-        # # Define bounding boxes
-        # left_box = (0, 0, left_patch_width, crop_height)
-        # middle_box = (left_patch_width, 0, left_patch_width + middle_patch_width, crop_height)
-        # right_box = (left_patch_width + middle_patch_width, 0, crop_width, crop_height)
-        # #print("patch widths l m r",left_box,middle_box,right_box)
+        # 3. Determine Interpolation Method
+        # Check if "mask" is in the path (case-insensitive)
+        if "mask" in image_path.lower():
+            # For Masks: Use NEAREST to keep it binary (0 and 255 only)
+            resample_mode = Image.Resampling.NEAREST
+        else:
+            # For Normal Images: Use LANCZOS for high quality
+            resample_mode = Image.Resampling.LANCZOS
 
-        # # Extract patches
-        # left_patch = cropped_img.crop(left_box)
-        # middle_patch = cropped_img.crop(middle_box)
-        # right_patch = cropped_img.crop(right_box)
+        # 4. Perform Resize (to 256x256)
+        final_img = cropped_img.resize((resize_dims), resample=resample_mode)
 
-        # Prepare filenames
+        # 5. Save the image
         base_name = os.path.basename(image_path)
         name, ext = os.path.splitext(base_name)
-
-        # Save patches
-        # left_patch.save(os.path.join(left_dir, f"{name}_left{ext}"))
-        # middle_patch.save(os.path.join(middle_dir, f"{name}_middle{ext}"))
-        # right_patch.save(os.path.join(right_dir, f"{name}_right{ext}"))
-        cropped_img.save(os.path.join(left_dir, f"{name}_cropped{ext}"))
+        final_img.save(os.path.join(left_dir, f"{name}_cropped{ext}"))
 
 
-def uneq_process_images_in_directory(source_dir, output_base_dir, crop_dimensions):
+def uneq_process_images_in_directory(source_dir, output_base_dir, crop_dimensions,resize_dims):
     """
     Process all images in the source directory: center crop, split (25%-50%-25%), and save patches.
     """
@@ -85,7 +73,7 @@ def uneq_process_images_in_directory(source_dir, output_base_dir, crop_dimension
     for filename in os.listdir(source_dir):
         if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
             image_path = os.path.join(source_dir, filename)
-            process_and_save_image(image_path, target_dir, crop_dimensions)
+            process_and_save_image(image_path, target_dir, crop_dimensions,resize_dims)
 
 # When called, it should take the raw dataset in `dataset_dir` and
 # create a tiled dataset inside it.
@@ -105,11 +93,12 @@ def create_tiled_dataset(dataset_dir, dataset_dirs_op):
     # crop_dimensions = (1236, 300)
     # resize_dimensions = (1280, 720)
     crop_dimensions = (768, 768)
+    resize_dims=(256,256)
 
-    uneq_process_images_in_directory(normal_dir_ip, dataset_dirs_op["normal_dir"], crop_dimensions)
-    uneq_process_images_in_directory(normal_test_dir_ip, dataset_dirs_op["normal_test_dir"], crop_dimensions)
-    uneq_process_images_in_directory(abnormal_dir_ip, dataset_dirs_op["abnormal_dir"], crop_dimensions)
-    uneq_process_images_in_directory(mask_dir_ip, dataset_dirs_op["mask_dir"], crop_dimensions)
+    uneq_process_images_in_directory(normal_dir_ip, dataset_dirs_op["normal_dir"], crop_dimensions,resize_dims)
+    uneq_process_images_in_directory(normal_test_dir_ip, dataset_dirs_op["normal_test_dir"], crop_dimensions,resize_dims)
+    uneq_process_images_in_directory(abnormal_dir_ip, dataset_dirs_op["abnormal_dir"], crop_dimensions,resize_dims)
+    uneq_process_images_in_directory(mask_dir_ip, dataset_dirs_op["mask_dir"], crop_dimensions,resize_dims)
 
     print("Created tile dataset @ ", dataset_dirs_op)
 
@@ -484,7 +473,7 @@ def main():
             [
 
                 # Resize((720,1280)),
-                Resize((256, 256)),
+                # Resize((256, 256)),
                 # CenterCrop((300,1240)),
                 Normalize(mean=mean, std=std),  # dataset normalization
                 # Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # ImageNet normalization
@@ -493,7 +482,7 @@ def main():
         eval_transform = Compose(
             [
                 # Resize((720,1280)),
-                Resize((256, 256)),
+                # Resize((256, 256)),
                 # CenterCrop((300,1240)),
                 Normalize(mean=mean, std=std),  # dataset normalization
                 # Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # ImageNet normalization
