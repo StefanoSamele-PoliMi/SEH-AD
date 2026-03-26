@@ -131,7 +131,7 @@ def visualiser(sample_dict, sample_idx, min_value, max_value):
     img_resized = cv2.resize(img_rgb, (256, 256))
 
     # 3. Process Anomaly Map
-    anomaly_map = sample_dict["anomaly_maps"][sample_idx].cpu().numpy()
+    anomaly_map = sample_dict["anomaly_maps"][sample_idx].cpu().numpy().squeeze()
 
     # Normalization logic (added 1e-10 to prevent division by zero)
     anomaly_map_normalized = (anomaly_map - min_value) / (max_value - min_value + 1e-10)
@@ -145,7 +145,7 @@ def visualiser(sample_dict, sample_idx, min_value, max_value):
     )
 
     # 5. Process Predicted Mask (binary segmentation)
-    pred_mask = sample_dict["pred_masks"][sample_idx].cpu().numpy()
+    pred_mask = sample_dict["pred_masks"][sample_idx].cpu().numpy().squeeze()
 
     # 6. Process Ground Truth Mask
     # Squeeze dimensions in case the mask is stored as [1, H, W]
@@ -602,9 +602,9 @@ def main():
 
     test_dat = preds_combined[0]
     # Specify a path if you want to save the evaluated curves
-    image_auroc(test_dat,"yes"), pixel_auroc(test_dat,"yes"), pro_metric(test_dat,"yes")
+    image_auroc(test_dat,"yes"), pixel_auroc(test_dat,"yes"), pro_metric(test_dat,"")
     visualise_metrics(test_dat)
-    save_all_predictions(test_dat, "/results")
+    save_all_predictions(test_dat, "/home/results")
 
 
 if __name__ == "__main__":
