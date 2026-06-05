@@ -15,15 +15,22 @@ if not os.path.exists(IMAGE_DIR):
     os.makedirs(IMAGE_DIR, exist_ok=True)
 
 # Adjustable crop parameters
-PADDING_SIZE = 0.01   # Physical margin (in meters) added around the target object relative to the original image coordinates.
-VIEW_WIDTH = 300      # The output image width in pixels, which defines the scale relative to the physical width of the box.
+PADDING_SIZE = 0.02   # Physical margin (in meters) added around the target object relative to the original image coordinates.
+VIEW_WIDTH =300      # The output image width in pixels, which defines the scale relative to the physical width of the box.
 
 # Physical parameters (in meters) (ArUco localization and cropping)
+# MARKER_SIZE = 0.06
+# BOX_W = 0.063
+# BOX_H = 0.183
+# BOX_T = 0.025
+# OFFSET_X = 0.05
+# DIST_Y = BOX_H - MARKER_SIZE
+
 MARKER_SIZE = 0.06
-BOX_W = 0.063
-BOX_H = 0.183
+BOX_W = 0.136
+BOX_H = 0.612
 BOX_T = 0.025
-OFFSET_X = 0.05
+OFFSET_X = 0.073
 DIST_Y = BOX_H - MARKER_SIZE
 
 
@@ -71,10 +78,10 @@ def get_crop_view(frame, mtx, dist, padding_size=PADDING_SIZE):
 
             # Define target top surface crop region using padding_size
             box_top_3d = np.array([
-                [OFFSET_X - padding_size, BOX_H - MARKER_SIZE / 2 + padding_size, BOX_T],
-                [OFFSET_X + BOX_W + padding_size, BOX_H - MARKER_SIZE / 2 + padding_size, BOX_T],
-                [OFFSET_X + BOX_W + padding_size, -MARKER_SIZE / 2 - padding_size, BOX_T],
-                [OFFSET_X - padding_size, -MARKER_SIZE / 2 - padding_size, BOX_T]
+                [OFFSET_X - padding_size, BOX_H - MARKER_SIZE / 2 + padding_size +0.07, BOX_T],
+                [OFFSET_X + BOX_W + padding_size, BOX_H - MARKER_SIZE / 2 + padding_size + 0.07, BOX_T],
+                [OFFSET_X + BOX_W + padding_size, -MARKER_SIZE / 2 - padding_size -0.02, BOX_T],
+                [OFFSET_X - padding_size, -MARKER_SIZE / 2 - padding_size - 0.02, BOX_T]
             ], dtype=np.float32)
 
             img_pts, _ = cv2.projectPoints(box_top_3d, rvec, tvec, mtx, dist)
